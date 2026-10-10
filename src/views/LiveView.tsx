@@ -1,7 +1,8 @@
 import { PlethWave } from '../components/PlethWave'
 import { IconBattery, IconBluetooth, IconDrop, IconHeart, IconSync } from '../components/Icons'
 import { Sparkline } from '../components/Sparkline'
-import { pulseZone, spo2Zone } from '../lib/analytics'
+import { pulseZone, spo2Zone, validPulse, validSpo2 } from '../lib/analytics'
+import { PULSE_STOPS } from '../ui/zones'
 import type { DeviceApi } from '../ui/useDevice'
 import { ErrorBanner } from '../components/ErrorBanner'
 
@@ -91,7 +92,9 @@ export function LiveView({ dev, btSupported, onOpenHistory }: { dev: DeviceApi; 
           {dev.trend.length > 5 ? (
             <>
               <div className="card-title sub"><span>Oxygen, last {Math.max(1, Math.round((dev.trend.length * 1) / 60))} min</span></div>
-              <Sparkline values={dev.trend.map((p) => p.spo2)} height={50} />
+              <Sparkline values={dev.trend.map((p) => validSpo2(p.spo2))} height={50} min={Math.min(80, ...dev.trend.map((p) => validSpo2(p.spo2) ?? 100).map((v) => Math.floor((v - 2) / 5) * 5))} />
+              <div className="card-title sub"><span>Heart rate</span></div>
+              <Sparkline values={dev.trend.map((p) => validPulse(p.pulse))} height={44} min={30} max={140} stops={PULSE_STOPS} bands={false} mode="mean" />
             </>
           ) : null}
         </section>
@@ -129,8 +132,9 @@ export function LiveView({ dev, btSupported, onOpenHistory }: { dev: DeviceApi; 
       <section className="card legend">
         <div className="card-title"><span>What the colours mean</span></div>
         <div className="legend-row"><i className="dot good" /><b>Green</b><span>Normal: oxygen 95–100%, pulse 50–100</span></div>
-        <div className="legend-row"><i className="dot warn" /><b>Amber</b><span>A bit off: oxygen 90–94%, pulse slow or fast</span></div>
-        <div className="legend-row"><i className="dot bad" /><b>Red</b><span>Low oxygen (under 90%) or very slow/fast pulse</span></div>
+        <div className="legend-row"><i className="dot warn" /><b>Amber</b><span>A bit low: oxygen 90–94%, pulse 40–49 or 101–120</span></div>
+        <div className="legend-row"><i className="dot low" /><b>Orange-red</b><span>Low oxygen: 88–89%</span></div>
+        <div className="legend-row"><i className="dot crit" /><b>Deep red</b><span>Very low oxygen: under 88%, or pulse under 40 / over 120</span></div>
       </section>
       <p className="disclaimer small">Not a medical device. For wellness tracking only.</p>
     </div>

@@ -1,7 +1,7 @@
 import type { StoredSession } from '../db/sessions'
 import { Sparkline } from '../components/Sparkline'
 import { IconChevron, IconDownload } from '../components/Icons'
-import { formatClock, formatDuration } from '../lib/analytics'
+import { formatClock, formatDuration, levelTone, ratingText, warningSummary } from '../lib/analytics'
 import { downloadText, sessionsToCsv } from '../lib/csv'
 
 export function nightLabel(start: number) {
@@ -17,8 +17,6 @@ export function nightLabel(start: number) {
   return { day, date: evening.toLocaleDateString([], { month: 'short', day: 'numeric' }) }
 }
 
-export const ratingText = { good: 'Looks good', fair: 'Some dips', attention: 'Worth a look' } as const
-const ratingTone = { good: 'good', fair: 'warn', attention: 'bad' } as const
 
 export function HistoryView({ sessions, onOpen, onConnect, onDemo, connected }: { sessions: StoredSession[]; onOpen: (id: string) => void; onConnect: () => void; onDemo: () => void; connected: boolean }) {
   if (!sessions.length) {
@@ -67,9 +65,16 @@ export function HistoryView({ sessions, onOpen, onConnect, onDemo, connected }: 
         {sessions.map((s) => {
           const st = s.stats
           const { day, date } = nightLabel(s.start)
+          const w = warningSummary(st)
           return (
             <li key={s.id}>
-              <button className="night-card" onClick={() => onOpen(s.id)}>
+              <button className={`night-card ${w ? 'has-warn' : ''}`} onClick={() => onOpen(s.id)}>
+                {w ? (
+                  <div className={`night-warn ${w.level === 3 ? 'critical' : 'bad'}`} role="alert">
+                    <span aria-hidden="true">⚠</span> <b>{w.headline}</b>
+                    {st.minSpo2 != null && st.minSpo2 < 90 ? <span> · lowest {st.minSpo2}%{st.minSpo2At ? ` at ${formatClock(st.minSpo2At)}` : ''}</span> : null}
+                  </div>
+                ) : null}
                 <div className="night-top">
                   <div>
                     <div className="night-day">{day} <span className="muted">· {date}</span></div>
@@ -77,7 +82,7 @@ export function HistoryView({ sessions, onOpen, onConnect, onDemo, connected }: 
                       {formatClock(s.start)} – {formatClock(s.start + st.durationSec * 1000)} · {formatDuration(st.durationSec)}
                     </div>
                   </div>
-                  <span className={`chip-rating ${ratingTone[st.rating]}`}>{ratingText[st.rating]}</span>
+                  <span className={`chip-rating ${levelTone[st.level]}`}>{ratingText[st.rating]}</span>
                 </div>
                 <div className="night-main">
                   <div className="night-big">
@@ -85,7 +90,7 @@ export function HistoryView({ sessions, onOpen, onConnect, onDemo, connected }: 
                     <span>avg oxygen</span>
                   </div>
                   <div className="night-big">
-                    <b className={st.minSpo2 != null && st.minSpo2 < 90 ? 'bad-text' : ''}>{st.minSpo2 ?? '--'}<small>%</small></b>
+                    <b className={st.minSpo2 != null && st.minSpo2 < 85 ? 'crit-text' : st.minSpo2 != null && st.minSpo2 < 90 ? 'bad-text' : ''}>{st.minSpo2 ?? '--'}<small>%</small></b>
                     <span>lowest</span>
                   </div>
                   <Sparkline values={s.spo2} />

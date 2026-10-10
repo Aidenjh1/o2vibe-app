@@ -21,7 +21,7 @@ export default defineConfig({
         theme_color: '#0e9f8e',
         background_color: '#f4f6fa',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'any',
         start_url: base,
         scope: base,
         categories: ['health', 'medical', 'lifestyle'],
