@@ -8,7 +8,7 @@ with a Google Pixel in mind), add it to your home screen, and it:
 - shows **live blood oxygen (SpO₂), pulse and the pulse waveform** in big, colour-coded tiles with plain-English explanations;
 - **downloads the overnight recordings** stored on the device and keeps them on the phone (IndexedDB);
 - shows a **history of nights** (avg / lowest SpO₂, time under 90%, number of oxygen drops, pulse avg / range, duration);
-- opens each night in a **zoomable chart** (pinch or drag to zoom) of SpO₂ and pulse with the oxygen zones shaded, plus “What this means” insights;
+- opens each night with a **red warning banner** whenever oxygen went low, then **separate, full-screen-tall SpO₂ and heart-rate charts** (zone-coloured lines, swipe sideways, pinch / ± to zoom, synced time axes; rotate to landscape for full-screen charts), a tappable **Notable events** list and “What this means” findings;
 - exports CSV (one night, or a summary of all nights), deletes nights, light / dark / automatic theme;
 - includes a **demo mode** with a realistic simulated device, so you can try everything without the hardware.
 
@@ -23,12 +23,10 @@ Live site: <https://aidenjh1.github.io/o2vibe-app/> (once GitHub Pages is enable
 |---|---|---|---|---|
 | 95–100 % | Normal (green) | | 50–100 bpm | Normal |
 | 90–94 % | A bit low (amber) | | 40–49 / 101–120 | Slow / Fast (amber) |
-| < 90 % | Low (red) | | < 40 / > 120 | Very slow / very fast (red) |
+| 88–89 % | Low (orange-red) | | < 40 / > 120 | Very slow / very fast (red) |
+| < 88 % | Very low (deep red) | | | |
 
-A **drop** is SpO₂ falling ≥ 3 points below the recent baseline (median of the previous 2 minutes) for ≥ 10 s —
-similar to a 3 % oxygen desaturation index (ODI). The app says < 5/hour is generally considered normal,
-5–15 mild, > 15 frequent. A night is labelled *Looks good*, *Some dips* (≥ 5 drops/h, ≥ 1 % of the time under 90 %, or a
-lowest reading under 88 %) or *Worth a look* (≥ 15 drops/h, ≥ 5 % under 90 %, or an average under 92 %).
+See **How a night is rated (v2)** below for the night rating and warning thresholds.
 
 ## Install on a Google Pixel
 
@@ -149,3 +147,19 @@ comes from open-source references; the app has **not yet been tested against a p
 - **Header fields after the start time** (summary values such as time under 90 %) differ slightly between the two references. The app
   calculates its own statistics from the samples and doesn’t rely on them.
 - File timestamps are treated as the device’s local time (the app sets the device clock to the phone’s time on every connection).
+
+## How a night is rated (v2)
+
+The rating is the **worst** criterion met. A night is never shown as "Looks normal" when any red criterion applies.
+Invalid samples (0, 255, SpO2 outside 50–100, pulse outside 25–250, sensor off) are dropped first. They create no false lows, hide no real lows, and are reported as "no / bad signal" time.
+The lowest reading (nadir) must be held for about 8 s (2 samples at 4 s), so a one-sample glitch is not reported as the nadir. Every low sample still counts towards T90, T88 and the other time-below totals.
+
+| Level | Shown as | Triggered by any of |
+|---|---|---|
+| 3 – deep red banner | **Very low oxygen** | nadir < 85% · ≥ 1 min < 85% · ≥ 5 min < 88% (T88) · T90 ≥ 30 min or ≥ 10% of the night · one continuous stretch < 90% ≥ 5 min · ODI ≥ 30/h (severe) · average SpO2 < 90% |
+| 2 – red banner | **Low oxygen** | nadir < 90% · T90 ≥ 1 min or ≥ 1% of the night · any time < 88% · continuous stretch < 90% ≥ 2 min · ODI 15–30/h (moderate) · average < 92% · pulse < 40 for ≥ 30 s · pulse > 120 for ≥ 30 s |
+| 1 – amber | **Worth watching** | any time < 90% · ODI 5–15/h (mild) · average < 94% · average pulse < 50 or ≥ 5 min < 50 · pulse > 100 for ≥ 2 min |
+| 0 – green | **Looks normal** | none of the above |
+
+ODI-3 / ODI-4 count falls of ≥ 3 / ≥ 4 points below the median of the previous 2 minutes, lasting ≥ 10 s. The bands are the usual < 5 normal, 5–15 mild, 15–30 moderate and > 30 severe.
+Chart colours: SpO2 is green ≥ 95, amber 90–94, orange-red 88–89 and deep red < 88. Pulse is blue 50–100, amber 40–49 / 101–120 and deep red < 40 / > 120.
