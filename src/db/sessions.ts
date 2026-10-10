@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import { computeStats, type SessionStats } from '../lib/analytics'
+import { computeStats, STATS_VERSION, type SessionStats } from '../lib/analytics'
 import type { O2Recording } from '../lib/viatom/file'
 
 export interface StoredSession {
@@ -70,13 +70,20 @@ export async function saveSession(s: StoredSession): Promise<boolean> {
   return !exists
 }
 
+/** Nights saved by an older version carry older stats: recompute from the raw samples so new rules apply. */
+function fresh(s: StoredSession): StoredSession {
+  if (s.stats?.version === STATS_VERSION) return s
+  return { ...s, stats: computeStats(s) }
+}
+
 export async function listSessions(): Promise<StoredSession[]> {
   const all = await (await db()).getAllFromIndex('sessions', 'byStart')
-  return all.reverse()
+  return all.reverse().map(fresh)
 }
 
 export async function getSession(id: string): Promise<StoredSession | undefined> {
-  return (await db()).get('sessions', id)
+  const s = await (await db()).get('sessions', id)
+  return s && fresh(s)
 }
 
 export async function deleteSession(id: string): Promise<void> {

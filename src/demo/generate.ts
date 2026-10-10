@@ -11,7 +11,8 @@ export function mulberry32(seed: number) {
   }
 }
 
-export type NightProfile = 'calm' | 'mild' | 'moderate'
+/** 'hypoxic' resembles a real reported night: avg ~93%, nadir ~84%, ~10 drops/h, resting pulse 40–48. */
+export type NightProfile = 'calm' | 'mild' | 'moderate' | 'hypoxic'
 
 export interface SimNight {
   start: Date
@@ -32,10 +33,11 @@ export function simulateNight(opts: { start: Date; hours: number; profile: Night
   }
   const dt = opts.intervalSec ?? 4
   const n = Math.round((opts.hours * 3600) / dt)
-  const eventRatePerHour = { calm: 1.5, mild: 6, moderate: 16 }[opts.profile]
-  const depth = { calm: [3, 5], mild: [4, 8], moderate: [5, 12] }[opts.profile]
-  const baseSpo2 = { calm: 96.6, mild: 95.6, moderate: 94.4 }[opts.profile] + gauss() * 0.4
-  const baseHr = 58 + rnd() * 8
+  const hyp = opts.profile === 'hypoxic'
+  const eventRatePerHour = { calm: 1.5, mild: 6, moderate: 16, hypoxic: 9 }[opts.profile]
+  const depth = { calm: [3, 5], mild: [4, 8], moderate: [5, 12], hypoxic: [3, 5] }[opts.profile]
+  const baseSpo2 = { calm: 96.6, mild: 95.6, moderate: 94.4, hypoxic: 93.9 }[opts.profile] + gauss() * 0.4
+  const baseHr = hyp ? 44 + rnd() * 2 : 58 + rnd() * 8
 
   const spo2: (number | null)[] = []
   const pulse: (number | null)[] = []
@@ -47,6 +49,7 @@ export function simulateNight(opts: { start: Date; hours: number; profile: Night
   let eventLen = 0
   let eventDepth = 0
   let gap = 0
+  let hrSpike = 0
   for (let i = 0; i < n; i++) {
     const hour = (i * dt) / 3600
     // ~90-min sleep cycles: REM periods (later in the night) get more events and a higher pulse.
@@ -67,6 +70,22 @@ export function simulateNight(opts: { start: Date; hours: number; profile: Night
 
     let s = baseSpo2 + drift + gauss() * 0.45 - waking * 0.2
     let hr = baseHr + hrDrift + gauss() * 1.2 + rem * 3 + settling * 2.5 + waking * 6
+    if (hyp) {
+      // Long REM stretch late in the night with a lower baseline and a few deep desaturations.
+      const f = hour / opts.hours
+      if (f > 0.62 && f < 0.74) s -= 1.2 + Math.sin(((f - 0.62) / 0.12) * Math.PI) * 1.0
+      if (f > 0.66 && f < 0.7 && event <= 0 && gap <= 0 && rnd() < 0.05) {
+        eventLen = Math.round((45 + rnd() * 50) / dt)
+        eventDepth = 5.5 + rnd() * 2.5
+        event = eventLen
+      }
+      hr -= rem * 3 // pulse stays low in this profile
+      if (rnd() < 0.002) hrSpike = Math.round((40 + rnd() * 50) / dt)
+      if (hrSpike > 0) {
+        hr += 22 + 10 * Math.sin((hrSpike * dt) / 20)
+        hrSpike--
+      }
+    }
     if (event > 0) {
       const phase = 1 - event / eventLen // 0..1
       const shape = Math.sin(Math.PI * Math.min(1, phase * 1.25)) // fall then recover
@@ -95,16 +114,19 @@ export function simulateNight(opts: { start: Date; hours: number; profile: Night
 
 /** A week of nights ending last night, newest last (matches device file order). */
 export function demoNights(now = new Date()): SimNight[] {
-  const profiles: NightProfile[] = ['calm', 'mild', 'calm', 'moderate', 'calm', 'mild', 'calm']
+  // Newest last. "Last night" is the hypoxic profile so the warning UI is visible straight away in demo mode.
+  const profiles: NightProfile[] = ['calm', 'mild', 'calm', 'moderate', 'calm', 'mild', 'hypoxic']
   const nights: SimNight[] = []
   for (let k = profiles.length; k >= 1; k--) {
     const d = new Date(now)
     d.setDate(d.getDate() - k)
     const seed = 1000 + d.getFullYear() * 400 + d.getMonth() * 32 + d.getDate()
+    // The hypoxic night uses a fixed seed so demo mode always shows the same, realistic warning case.
+    const nightSeed = profiles[profiles.length - k] === 'hypoxic' ? 811703 : seed
     const r = mulberry32(seed)
     d.setHours(22, Math.floor(r() * 60) + (r() < 0.5 ? 0 : 45), Math.floor(r() * 60), 0)
-    const hours = 6.2 + r() * 2.2
-    nights.push(simulateNight({ start: d, hours, profile: profiles[profiles.length - k], seed }))
+    const hours = profiles[profiles.length - k] === 'hypoxic' ? 8.5 : 6.2 + r() * 2.2
+    nights.push(simulateNight({ start: d, hours, profile: profiles[profiles.length - k], seed: nightSeed }))
   }
   return nights
 }
