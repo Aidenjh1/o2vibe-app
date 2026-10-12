@@ -44,3 +44,6 @@ export const IconMoon = (p: SVGProps<SVGSVGElement>) => (
 export const IconChevron = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="m9 6 6 6-6 6" /></svg>
 )
+export const IconImport = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M4 14v5h16v-5M12 3v11m0 0-4-4m4 4 4-4" /></svg>
+)

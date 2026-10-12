@@ -1,6 +1,6 @@
 import type { StoredSession } from '../db/sessions'
 import { Sparkline } from '../components/Sparkline'
-import { IconChevron, IconDownload } from '../components/Icons'
+import { IconChevron, IconDownload, IconImport } from '../components/Icons'
 import { formatClock, formatDuration, levelTone, ratingText, warningSummary } from '../lib/analytics'
 import { downloadText, sessionsToCsv } from '../lib/csv'
 
@@ -18,7 +18,7 @@ export function nightLabel(start: number) {
 }
 
 
-export function HistoryView({ sessions, onOpen, onConnect, onDemo, connected }: { sessions: StoredSession[]; onOpen: (id: string) => void; onConnect: () => void; onDemo: () => void; connected: boolean }) {
+export function HistoryView({ sessions, onOpen, onConnect, onDemo, onImport, connected }: { sessions: StoredSession[]; onOpen: (id: string) => void; onConnect: () => void; onDemo: () => void; onImport: () => void; connected: boolean }) {
   if (!sessions.length) {
     return (
       <div className="view empty">
@@ -31,6 +31,7 @@ export function HistoryView({ sessions, onOpen, onConnect, onDemo, connected }: 
             <button className="btn ghost big" onClick={onDemo}>Load demo nights</button>
           </div>
         ) : null}
+        <button className="btn ghost big" onClick={onImport}><IconImport /> Import from desktop app</button>
       </div>
     )
   }
@@ -47,9 +48,14 @@ export function HistoryView({ sessions, onOpen, onConnect, onDemo, connected }: 
     <div className="view">
       <div className="view-head">
         <h2>Your nights</h2>
-        <button className="btn small ghost" onClick={() => downloadText(`o2vibe-summary-${new Date().toISOString().slice(0, 10)}.csv`, sessionsToCsv(sessions))}>
-          <IconDownload width={18} height={18} /> Export
-        </button>
+        <div className="head-actions">
+          <button className="btn small ghost" onClick={onImport}>
+            <IconImport width={18} height={18} /> Import
+          </button>
+          <button className="btn small ghost" onClick={() => downloadText(`o2vibe-summary-${new Date().toISOString().slice(0, 10)}.csv`, sessionsToCsv(sessions))}>
+            <IconDownload width={18} height={18} /> Export
+          </button>
+        </div>
       </div>
 
       <section className="week">

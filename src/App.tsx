@@ -9,6 +9,7 @@ import { HistoryView } from './views/HistoryView'
 import { SessionView } from './views/SessionView'
 import { HelpView } from './views/HelpView'
 import { IconHelp, IconHistory, IconLive } from './components/Icons'
+import { ImportSheet } from './components/ImportSheet'
 
 type Route = { name: 'live' } | { name: 'history' } | { name: 'help' } | { name: 'session'; id: string }
 
@@ -27,6 +28,7 @@ export default function App() {
   const [route, setRoute] = useState<Route>(parseHash)
   const [sessions, setSessions] = useState<StoredSession[]>([])
   const [loaded, setLoaded] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [onboarded, setOnboarded] = useState(() => localStorage.getItem('o2.onboarded') === '1')
   const btError = useMemo(() => checkWebBluetoothSupport(), [])
 
@@ -98,7 +100,7 @@ export default function App() {
       <main className="content">
         {route.name === 'live' && <LiveView dev={dev} btSupported={!btError} onOpenHistory={() => go('history')} />}
         {route.name === 'history' && loaded && (
-          <HistoryView sessions={sessions} onOpen={(id) => go('session/' + encodeURIComponent(id))} onConnect={connect} onDemo={loadDemo} connected={dev.status === 'connected'} />
+          <HistoryView sessions={sessions} onOpen={(id) => go('session/' + encodeURIComponent(id))} onConnect={connect} onDemo={loadDemo} onImport={() => setImporting(true)} connected={dev.status === 'connected'} />
         )}
         {route.name === 'session' &&
           (session ? (
@@ -120,6 +122,7 @@ export default function App() {
             theme={theme.pref}
             setTheme={theme.setPref}
             demoCount={sessions.filter((s) => s.source === 'demo').length}
+            onImport={() => setImporting(true)}
             onClearDemo={async () => {
               await deleteBySource('demo')
               await refresh()
@@ -131,6 +134,15 @@ export default function App() {
           />
         )}
       </main>
+      {importing ? (
+        <ImportSheet
+          onImported={refresh}
+          onClose={() => {
+            setImporting(false)
+            go('history')
+          }}
+        />
+      ) : null}
       <nav className="tabbar" aria-label="Main">
         <button className={tab === 'live' ? 'on' : ''} onClick={() => go('live')}><IconLive /><span>Live</span></button>
         <button className={tab === 'history' ? 'on' : ''} onClick={() => go('history')}>
