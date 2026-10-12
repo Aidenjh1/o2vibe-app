@@ -50,6 +50,25 @@ If the link drops, the app retries automatically (0.5 s → 12 s back-off) and s
 Errors are explained in plain language (Bluetooth off, permission blocked, unsupported browser, not https,
 wrong device, newer-protocol device).
 
+## Android app (APK)
+
+An installable Android app is built from the live PWA as a **Trusted Web Activity** with
+[Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap). A TWA runs the site in Chrome itself, so Web Bluetooth keeps working
+(a plain WebView/Capacitor shell would not support Web Bluetooth).
+
+- Package id: `io.github.aidenjh1.o2vibe`, launcher name **O2 Vibe**, minSdk 24, start URL `https://aidenjh1.github.io/o2vibe-app/`.
+- Full-screen without a URL bar requires Digital Asset Links at the **domain root**:
+  `https://aidenjh1.github.io/.well-known/assetlinks.json`, served from the user-site repo `Aidenjh1/Aidenjh1.github.io`.
+  It lists the signing key's SHA-256 fingerprint. Until it is reachable the app still works, but shows a thin URL bar.
+- App updates are mostly automatic: the APK just opens the live site, so pushing to `main` updates the app's content.
+  Rebuild the APK only to change the icon, name, colours or package settings.
+- Rebuild: copy `android/twa-manifest.json` into a working folder **outside the repo**, then run `bubblewrap update --manifest=twa-manifest.json && bubblewrap build` there (JDK 17 + Android SDK; point `signingKey.path` at the private keystore). Bump `appVersionCode`
+  for each new APK, and sign with the **same keystore** or Android will refuse to install it over the old one.
+- The keystore and its passwords are kept privately off-repo and must never be committed (`*.keystore`, `*.jks` are git-ignored).
+
+Install on a Pixel: copy `o2vibe.apk` to the phone (e.g. Google Drive ▸ download), open it, allow “Install unknown apps” for
+the app you opened it from when asked, then tap Install. Bluetooth works as on the website (Chrome must be installed and up to date).
+
 ## Import older nights from the O2 desktop app
 
 The O2 Vibe only keeps its most recent recordings. Nights saved by the O2 desktop app can be brought in on the phone:
