@@ -1,7 +1,7 @@
-import { IconMoon, IconSun } from '../components/Icons'
+import { IconImport, IconMoon, IconSun } from '../components/Icons'
 import type { ThemePref } from '../ui/theme'
 
-export function HelpView({ theme, setTheme, onShowIntro, onClearDemo, demoCount }: { theme: ThemePref; setTheme: (t: ThemePref) => void; onShowIntro: () => void; onClearDemo: () => void; demoCount: number }) {
+export function HelpView({ theme, setTheme, onShowIntro, onClearDemo, onImport, demoCount }: { theme: ThemePref; setTheme: (t: ThemePref) => void; onShowIntro: () => void; onClearDemo: () => void; onImport: () => void; demoCount: number }) {
   return (
     <div className="view help">
       <h2>Help & settings</h2>
@@ -31,6 +31,12 @@ export function HelpView({ theme, setTheme, onShowIntro, onClearDemo, demoCount 
       <section className="card">
         <div className="card-title"><span>Downloading your nights</span></div>
         <p>The O2 Vibe saves each recording when you take the sensor off in the morning. Connect, then tap <b>Download recordings</b>. Each night takes a few seconds. Nights you already saved are skipped, so you can sync as often as you like.</p>
+      </section>
+
+      <section className="card">
+        <div className="card-title"><span>Nights from the desktop app</span></div>
+        <p>The O2 Vibe only keeps its most recent recordings. To bring in older nights saved by the O2 desktop app on your computer, copy its database file (<b>.db</b>) to this phone — for example upload it to Google Drive and download it, or email it to yourself — then tap <b>Import</b> and pick the file. Nights already on this phone are skipped.</p>
+        <button className="btn ghost" onClick={onImport}><IconImport /> Import from desktop app</button>
       </section>
 
       <section className="card">

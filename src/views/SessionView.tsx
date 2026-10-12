@@ -32,7 +32,9 @@ export function SessionView({ session, theme, onBack, onDelete }: { session: Sto
   const [focus, setFocus] = useState<ChartFocus | null>(null)
   const [allEvents, setAllEvents] = useState(false)
   useChartFullMode()
-  useEffect(() => window.scrollTo(0, 0), [session.id])
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [session.id])
 
   const st = session.stats
   const { day, date } = nightLabel(session.start)
@@ -54,7 +56,7 @@ export function SessionView({ session, theme, onBack, onDelete }: { session: Sto
         <button className="icon-btn" onClick={onBack} aria-label="Back to history"><IconBack /></button>
         <div>
           <h2>{day} <span className="muted">· {date}</span></h2>
-          <div className="muted small">{formatClock(session.start)} – {formatClock(end)} · {formatDuration(st.durationSec)}{session.source === 'demo' ? ' · demo data' : ''}</div>
+          <div className="muted small">{formatClock(session.start)} – {formatClock(end)} · {formatDuration(st.durationSec)}{session.source === 'demo' ? ' · demo data' : session.source === 'import' ? ' · imported from desktop app' : ''}</div>
         </div>
       </div>
 
@@ -114,6 +116,13 @@ export function SessionView({ session, theme, onBack, onDelete }: { session: Sto
         <div className="card-title"><span>Time in each oxygen zone</span></div>
         <ZoneBar normal={st.timeNormalSec} bitLow={st.timeBitLowSec} low={st.timeLowSec} veryLow={st.timeVeryLowSec} />
       </section>
+
+      {session.notes ? (
+        <section className="card notes-card">
+          <div className="card-title"><span>Your notes</span></div>
+          <p>{session.notes}</p>
+        </section>
+      ) : null}
 
       <section className="card">
         <div className="card-title"><span>What this means</span></div>
