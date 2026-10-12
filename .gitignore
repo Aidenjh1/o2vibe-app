@@ -27,3 +27,9 @@ screenshots
 public/icons/*.png
 public/favicon.png
 package-lock.json
+
+# Personal health data must never be committed
+*.db
+*.sqlite
+*.sqlite3
+*.o2vibe.json

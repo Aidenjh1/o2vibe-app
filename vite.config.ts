@@ -32,10 +32,13 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,svg,webmanifest}'],
+        // wasm = sql.js, lazy-loaded only when importing a desktop .db (precached so import also works offline).
+        globPatterns: ['**/*.{js,css,html,png,svg,webmanifest,wasm}'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: 'index.html',
       },
     }),
   ],
+  worker: { format: 'es' },
   preview: { host: '0.0.0.0', port: 4173 },
 })

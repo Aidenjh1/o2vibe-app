@@ -50,6 +50,53 @@ If the link drops, the app retries automatically (0.5 s → 12 s back-off) and s
 Errors are explained in plain language (Bluetooth off, permission blocked, unsupported browser, not https,
 wrong device, newer-protocol device).
 
+## Import older nights from the O2 desktop app
+
+The O2 Vibe only keeps its most recent recordings. Nights saved by the O2 desktop app can be brought in on the phone:
+**History ▸ Import** (or **Help ▸ Import from desktop app**) and pick either
+
+- the desktop app's SQLite database (`.db`): tables `sessions(id, start_time, end_time, label "Downloaded: YYYYMMDDhhmmss", notes)`,
+  `readings(session_id, timestamp, spo2, hr, pi, battery)` (one row per 4 s sample, local-time ISO stamps) and an optional `daily_notes(date, notes)`; or
+- an O2 Vibe export, `*.o2vibe.json` (format below).
+
+How it works:
+
+- Parsing runs in a Web Worker; `.db` files are read with [sql.js](https://sql.js.org) (SQLite compiled to WASM), which is only
+  downloaded when you import a database — it isn't in the main bundle. Progress is shown; the UI stays responsive.
+- Readings are placed back on a regular grid (the device's sample interval); rows the desktop app dropped become gaps
+  ("no signal") instead of being stitched together. Invalid values (0, 127, 255, out of range) are ignored by the normal analytics.
+- Stats are computed with the same analytics as Bluetooth downloads.
+- De-duplication: a night is skipped if one already on the phone starts within 1 minute of it (the device file name *is* its start time),
+  so nights already pulled over Bluetooth, or imported before, are never duplicated — in either order.
+- A daily note from the desktop app is attached to that evening's main recording and shown as “Your notes” on the night.
+- Everything happens on the phone; nothing is uploaded.
+
+`.o2vibe.json` v1:
+
+```json
+{
+  "format": "o2vibe-export",
+  "version": 1,
+  "exportedAt": "2025-03-21T08:00:00Z",
+  "source": "O2 desktop app database",
+  "nights": [
+    {
+      "fileName": "20250320233015",
+      "start": "2025-03-20T23:30:15",
+      "intervalSec": 4,
+      "spo2": [95, 96, null, 94],
+      "pulse": [52, 51, null, 50],
+      "notes": "optional free text"
+    }
+  ]
+}
+```
+
+`start` is local wall-clock time (no zone), like the device; samples are on a regular `intervalSec` grid and `null` marks a missing sample.
+`motion` (array) is optional.
+
+> Personal health data: never commit `.db` files or exports to this repo (they're in `.gitignore`). Tests use generated, synthetic fixtures only.
+
 ## Develop / build
 
 ```bash

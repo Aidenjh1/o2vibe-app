@@ -17,12 +17,14 @@
     "idb": "^8.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "sql.js": "^1.14.2",
     "uplot": "^1.6.32"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
+    "@types/sql.js": "^1.4.11",
     "@types/web-bluetooth": "^0.0.21",
     "@vitejs/plugin-react": "^6.1.1",
     "fake-indexeddb": "^6.2.5",
