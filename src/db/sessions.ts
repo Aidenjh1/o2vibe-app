@@ -5,7 +5,7 @@ import type { O2Recording } from '../lib/viatom/file'
 export interface StoredSession {
   /** Stable id: device serial (or name) + file name → re-syncing never duplicates. */
   id: string
-  source: 'device' | 'demo'
+  source: 'device' | 'demo' | 'import'
   deviceName: string
   serial?: string
   fileName: string
@@ -16,6 +16,8 @@ export interface StoredSession {
   motion: number[]
   stats: SessionStats
   importedAt: number
+  /** Free-text notes carried over from the desktop app (imported nights only). */
+  notes?: string
 }
 
 interface O2DB extends DBSchema {
@@ -55,15 +57,18 @@ export async function hasSession(id: string): Promise<boolean> {
   return (await (await db()).getKey('sessions', id)) !== undefined
 }
 
+export const DEDUPE_WINDOW_MS = 60_000
+
 /** Returns false if it already existed (deduped). */
 export async function saveSession(s: StoredSession): Promise<boolean> {
   const d = await db()
   const tx = d.transaction('sessions', 'readwrite')
   let exists = (await tx.store.getKey(s.id)) !== undefined
-  // Also dedupe on identical start time + length (same night imported under another device name).
+  // Also dedupe on start time (±1 min): the same night pulled over Bluetooth and imported from the desktop app
+  // has a different id but the same start. Demo nights never block real ones (and vice versa).
   if (!exists) {
-    const sameStart = await tx.store.index('byStart').getAll(s.start)
-    exists = sameStart.some((o) => o.spo2.length === s.spo2.length)
+    const near = await tx.store.index('byStart').getAll(IDBKeyRange.bound(s.start - DEDUPE_WINDOW_MS, s.start + DEDUPE_WINDOW_MS))
+    exists = near.some((o) => (o.source === 'demo') === (s.source === 'demo'))
   }
   if (!exists) await tx.store.put(s)
   await tx.done
